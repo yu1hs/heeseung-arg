@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HEE · 痕迹</title>
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/forum.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+<div class="forum">
+    <!-- 汉堡菜单按钮（仅移动端显示） -->
+    <div class="menu-toggle" id="menu-toggle">
+        <span></span>
+    </div>
+
+    <!-- 侧边栏导航 -->
+    <div class="forum-sidebar" id="forum-sidebar">
+        <div class="forum-logo">
+            <h1>HEE</h1>
+            <p>痕迹 · 从未公开</p>
+        </div>
+        <nav class="forum-nav">
+            <div class="nav-item" data-page="posts">
+                <span class="nav-icon">📜</span>
+                <span class="nav-label">帖子</span>
+            </div>
+            <div class="nav-item" data-page="gallery">
+                <span class="nav-icon">🖼️</span>
+                <span class="nav-label">图廊</span>
+            </div>
+            <div class="nav-item" data-page="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">关于他</span>
+            </div>
+            <div class="nav-item" data-page="pm">
+                <span class="nav-icon">💬</span>
+                <span class="nav-label">悄悄话</span>
+            </div>
+            <div class="nav-item" data-page="favorites">
+                <span class="nav-icon">⭐</span>
+                <span class="nav-label">收藏</span>
+            </div>
+            <div class="nav-item" data-page="logs">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">日志</span>
+            </div>
+            <div class="nav-item" data-page="trash">
+                <span class="nav-icon">🗑️</span>
+                <span class="nav-label">回收站</span>
+            </div>
+        </nav>
+        <div class="forum-user">
+            <div class="user-status">
+                <span class="status-dot offline"></span>
+                <span class="user-name">Heeseung</span>
+            </div>
+            <div class="user-last">最后活动: 很久以前</div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="forum-main">
+        <div class="forum-header">
+            <div class="forum-breadcrumb">
+                <span id="breadcrumb">HEE / 帖子</span>
+            </div>
+            <div class="forum-title" id="page-title">帖子</div>
+        </div>
+        <div class="forum-content" id="forum-content">
+            <!-- 动态内容会加载到这里 -->
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<!-- 扫描线效果（沉浸） -->
+<div class="scan-line"></div>
+<div class="noise-overlay"></div>
+
+<script src="js/state.js"></script>
+<script src="js/dialogue.js"></script>
+<script src="js/photos.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/endings.js"></script>
+<script src="js/audio.js"></script>
+<script>
+    // 论坛主逻辑
+    (function() {
+        // 当前激活的页面
+        let currentPage = 'posts';
+        let currentDay = parseInt(localStorage.getItem('hee_day') || '1');
+        let residue = parseInt(localStorage.getItem('hee_residue') || '0');
+        
+        // 模拟数据（后续会移到data/*.json）
+        let posts = {
+            day1: [
+                { id: 1, title: '...', date: '2024-12-31 04:13', content: '不知道该写什么。但想留下点什么。', deleted: false }
+            ]
+        };
+        
+        let trash = [
+            { id: 't1', name: 'note_01.txt', date: '2024-03-15 02:47', content: '02:47\n想说一句话。写了。删了。这样比较干净。' },
+            { id: 't2', name: 'note_02.txt', date: '2024-06-22 03:22', content: '03:22\n有人看了回收站。我以为会彻底删掉。\n……\n算了。' }
+        ];
+        
+        let profile = {
+            name: 'Heeseung',
+            birth: '???',
+            likes: '???',
+            dislikes: '???',
+            bio: '一个快要被删干净的人。'
+        };
+        
+        let favorites = {
+            songs: [{ name: '凌晨三点听比较好', note: '适合凌晨' }],
+            movies: [{ name: '结局不喜欢', note: '只看过片段' }],
+            photos: [{ name: '天气很好那天', note: '没人' }]
+        };
+        
+        let logs = [
+            { date: '03-11', text: '下雨。没出门。' },
+            { date: '03-15', text: '冰美式。太冰了。' },
+            { date: '04-02', text: '累。' },
+            { date: '06-21', text: '白天很长。' },
+            { date: '08-14', text: '04:00' },
+            { date: '10-11', text: '' },
+            { date: '12-31', text: '一年结束了。' }
+        ];
+        
+        let gallery = [
+            { id: 1, src: '', caption: '天空', date: '2024-03-11', meta: '那天下了雨。之后停了。', variant: 0 },
+            { id: 2, src: '', caption: '练习室', date: '2024-04-02', meta: '拍糊了。不想重拍。', variant: 0 },
+            { id: 3, src: '', caption: '便利店', date: '2024-06-21', meta: '02:00 冰美式', variant: 0 },
+            { id: 4, src: '', caption: '侧影', date: '2024-08-14', meta: '不记得为什么拍这个', variant: 0 }
+        ];
+        
+        // 渲染函数
+        function renderPage(page) {
+            const container = document.getElementById('forum-content');
+            const breadcrumb = document.getElementById('breadcrumb');
+            const pageTitle = document.getElementById('page-title');
+            
+            breadcrumb.innerHTML = `HEE / ${getPageName(page)}`;
+            pageTitle.innerHTML = getPageName(page);
+            
+            switch(page) {
+                case 'posts':
+                    renderPosts(container);
+                    break;
+                case 'gallery':
+                    renderGallery(container);
+                    break;
+                case 'profile':
+                    renderProfile(container);
+                    break;
+                case 'pm':
+                    renderPM(container);
+                    break;
+                case 'favorites':
+                    renderFavorites(container);
+                    break;
+                case 'logs':
+                    renderLogs(container);
+                    break;
+                case 'trash':
+                    renderTrash(container);
+                    break;
+                default:
+                    container.innerHTML = '<div class="loading">页面不存在</div>';
+            }
+        }
+        
+        function getPageName(page) {
+            const names = {
+                posts: '帖子',
+                gallery: '图廊',
+                profile: '关于他',
+                pm: '悄悄话',
+                favorites: '收藏',
+                logs: '日志',
+                trash: '回收站'
+            };
+            return names[page] || 'HEE';
+        }
+        
+        function renderPosts(container) {
+            let html = '<div class="post-list">';
+            // 根据天数显示不同内容
+            let availablePosts = [];
+            if (currentDay >= 1) {
+                availablePosts.push({ title: '...', date: '2024-12-31 04:13', content: '不知道该写什么。但想留下点什么。', id: 1 });
+            }
+            if (currentDay >= 3) {
+                availablePosts.push({ title: '今天', date: '2025-01-02 23:58', content: '今天发生了一件很好的事。想让你知道。', id: 2 });
+            }
+            if (currentDay >= 5) {
+                availablePosts.push({ title: '失眠', date: '2025-01-04 03:22', content: '又失眠了。在想一件事。……忘了。不重要。', id: 3 });
+            }
+            
+            if (availablePosts.length === 0) {
+                html += '<div class="post-item">暂无帖子</div>';
+            } else {
+                availablePosts.forEach(post => {
+                    html += `
+                        <div class="post-item" onclick="viewPost(${post.id})">
+                            <div class="post-title">${escapeHtml(post.title)}</div>
+                            <div class="post-meta">
+                                <span class="post-date">📅 ${post.date}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function renderGallery(container) {
+            let html = '<div class="gallery-grid">';
+            gallery.forEach(photo => {
+                html += `
+                    <div class="gallery-item" onclick="viewPhoto(${photo.id})">
+                        <div class="gallery-image">
+                            <img src="assets/images/photos/photo_${photo.id}_base.jpg" alt="${photo.caption}" onerror="this.src='assets/images/ui/placeholder.jpg'">
+                        </div>
+                        <div class="gallery-caption">${escapeHtml(photo.caption)}<br>${photo.date}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function renderProfile(container) {
+            let birthDisplay = currentDay >= 3 ? profile.birth : '???';
+            let likesDisplay = currentDay >= 4 ? profile.likes : '???';
+            let dislikesDisplay = currentDay >= 4 ? profile.dislikes : '???';
+            
+            let html = `
+                <div class="profile-card">
+                    <div class="profile-field">
+                        <div class="profile-label">NAME</div>
+                        <div class="profile-value">${profile.name}</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-label">BIRTH</div>
+                        <div class="profile-value ${currentDay < 3 ? 'hidden' : ''}">${birthDisplay}</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-label">LIKES</div>
+                        <div class="profile-value ${currentDay < 4 ? 'hidden' : ''}">${likesDisplay}</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-label">DISLIKES</div>
+                        <div class="profile-value ${currentDay < 4 ? 'hidden' : ''}">${dislikesDisplay}</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-label">BIO</div>
+                        <div class="profile-value">${profile.bio}</div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+        
+        function renderPM(container) {
+            let html = `
+                <div class="pm-container">
+                    <div class="pm-messages" id="pm-messages">
+                        <div class="pm-message heeseung">
+                            <div class="pm-name">Heeseung · 很久以前</div>
+                            <div class="pm-bubble">……你怎么进来的。</div>
+                        </div>
+                    </div>
+                    <div class="pm-input-area">
+                        <input type="text" class="pm-input" id="pm-input" placeholder="写点什么..." autocomplete="off">
+                        <button class="pm-send" id="pm-send">发送</button>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
+            
+            // 绑定发送事件
+            const sendBtn = document.getElementById('pm-send');
+            const input = document.getElementById('pm-input');
+            const messagesDiv = document.getElementById('pm-messages');
+            
+            function sendMessage() {
+                const text = input.value.trim();
+                if (!text) return;
+                
+                // 添加用户消息
+                const userMsg = document.createElement('div');
+                userMsg.className = 'pm-message user';
+                userMsg.innerHTML = `<div class="pm-name">你 · 刚刚</div><div class="pm-bubble">${escapeHtml(text)}</div>`;
+                messagesDiv.appendChild(userMsg);
+                input.value = '';
+                
+                // 滚动到底部
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                
+                // 模拟羲承回复（根据残响值和天数）
+                setTimeout(() => {
+                    let reply = getHeeseungReply(text, currentDay, residue);
+                    const heeMsg = document.createElement('div');
+                    heeMsg.className = 'pm-message heeseung';
+                    heeMsg.innerHTML = `<div class="pm-name">Heeseung · 刚刚</div><div class="pm-bubble">${reply}</div>`;
+                    messagesDiv.appendChild(heeMsg);
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    
+                    // 更新残响值
+                    updateResidue(text);
+                }, 800);
+            }
+            
+            sendBtn.addEventListener('click', sendMessage);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+        }
+        
+        function getHeeseungReply(msg, day, res) {
+            // 简易回复逻辑（后续会丰富）
+            const replies = [
+                '……',
+                '你还在这里。',
+                '我不知道该说什么。',
+                '你看了那些帖子。',
+                '……算了。',
+                '你很像一个人。',
+                '我本来想删掉这些的。'
+            ];
+            
+            if (msg.includes('谁') || msg.includes('你')) {
+                return '一个快要被删干净的人。';
+            }
+            if (msg.includes('为什么') || msg.includes('怎么')) {
+                return '我也不知道。可能是不想彻底消失。';
+            }
+            if (msg.includes('你好') || msg.includes('嗨')) {
+                return '……你好。很久没人这么说了。';
+            }
+            if (day >= 5 && (msg.includes('失眠') || msg.includes('凌晨'))) {
+                return '你也在这个时间醒着吗。';
+            }
+            
+            return replies[Math.floor(Math.random() * replies.length)];
+        }
+        
+        function updateResidue(msg) {
+            let add = 0;
+            if (msg.length > 5) add = 1;
+            if (msg.includes('谢谢') || msg.includes('懂')) add = 2;
+            if (msg.includes('删') || msg.includes('走')) add = -1;
+            
+            let newResidue = Math.max(-10, Math.min(30, residue + add));
+            localStorage.setItem('hee_residue', newResidue);
+            residue = newResidue;
+            
+            // 检查是否增加天数
+            checkDayProgression();
+        }
+        
+        function checkDayProgression() {
+            // 简单逻辑：每天第一次进入增加天数（实际需要更复杂）
+            let lastDate = localStorage.getItem('hee_last_date');
+            let today = new Date().toDateString();
+            if (lastDate !== today) {
+                let newDay = Math.min(7, currentDay + 1);
+                localStorage.setItem('hee_day', newDay);
+                localStorage.setItem('hee_last_date', today);
+                currentDay = newDay;
+            }
+        }
+        
+        function renderFavorites(container) {
+            let html = '';
+            for (let cat in favorites) {
+                let catName = cat === 'songs' ? '🎵 音乐' : (cat === 'movies' ? '🎬 电影' : '📷 照片');
+                html += `<div class="favorites-category">
+                    <div class="favorites-title">${catName}</div>
+                    <div class="favorites-list">`;
+                favorites[cat].forEach(item => {
+                    html += `<div class="favorite-item">
+                        <div class="favorite-name">${escapeHtml(item.name)}</div>
+                        <div class="favorite-note">${escapeHtml(item.note)}</div>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            }
+            container.innerHTML = html;
+        }
+        
+        function renderLogs(container) {
+            let html = '<div class="log-timeline">';
+            logs.forEach(log => {
+                let textDisplay = log.text === '' ? '<span class="blank">——</span>' : escapeHtml(log.text);
+                html += `
+                    <div class="log-entry">
+                        <div class="log-date">${log.date}</div>
+                        <div class="log-text">${textDisplay}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function renderTrash(container) {
+            let html = '<div class="trash-list">';
+            trash.forEach(item => {
+                html += `
+                    <div class="trash-item" onclick="viewTrashItem('${item.id}')">
+                        <div class="trash-title">${escapeHtml(item.name)}</div>
+                        <div class="post-meta">🗑️ ${item.date}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // 全局函数供onclick调用
+        window.viewPost = function(id) {
+            alert('帖子详情功能开发中。第 ' + currentDay + ' 天');
+        };
+        
+        window.viewPhoto = function(id) {
+            alert('查看照片: ' + gallery[id-1]?.caption);
+            // 触发照片变化逻辑
+            if (typeof incrementPhotoVariant === 'function') {
+                incrementPhotoVariant(id);
+            }
+        };
+        
+        window.viewTrashItem = function(id) {
+            let item = trash.find(t => t.id === id);
+            if (item) {
+                alert(item.content);
+            }
+        };
+        
+        // 导航切换
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const page = this.dataset.page;
+                if (page) {
+                    currentPage = page;
+                    renderPage(currentPage);
+                    // 更新激活样式
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+        
+        // 移动端菜单
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('forum-sidebar');
+        if (menuToggle) {
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+                this.classList.toggle('open');
+            });
+        }
+        
+        // 初始化
+        renderPage('posts');
+        document.querySelector('.nav-item[data-page="posts"]').classList.add('active');
+        
+        // 每天第一次进入时检查
+        checkDayProgression();
+    })();
+</script>
+</body>
+</html>
