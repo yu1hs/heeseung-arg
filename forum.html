@@ -4,19 +4,387 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>HEE · 痕迹</title>
-    <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/forum.css">
-    <link rel="stylesheet" href="css/mobile.css">
-    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0d0d0d;
+            color: #c0c0c0;
+            font-family: 'Courier New', 'SF Mono', monospace;
+            line-height: 1.5;
+        }
+
+        /* 论坛布局 */
+        .forum {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .forum-sidebar {
+            width: 260px;
+            background: #111111;
+            border-right: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+        }
+
+        .forum-logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 20px;
+        }
+
+        .forum-logo h1 {
+            font-size: 28px;
+            font-weight: normal;
+            letter-spacing: 4px;
+            color: #5f8b6f;
+        }
+
+        .forum-logo p {
+            font-size: 10px;
+            color: #555555;
+            margin-top: 8px;
+        }
+
+        .forum-nav {
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #888888;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(95, 139, 111, 0.1);
+            color: #c0c0c0;
+        }
+
+        .nav-item.active {
+            border-left-color: #5f8b6f;
+            background: rgba(95, 139, 111, 0.05);
+            color: #5f8b6f;
+        }
+
+        .nav-icon {
+            font-size: 18px;
+            width: 24px;
+        }
+
+        .nav-label {
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .forum-user {
+            padding: 16px 20px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 11px;
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555555;
+        }
+
+        .status-dot.offline {
+            background: #555555;
+        }
+
+        .user-name {
+            color: #c0c0c0;
+        }
+
+        .user-last {
+            font-size: 10px;
+            color: #555555;
+        }
+
+        /* 主内容区 */
+        .forum-main {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        .forum-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #2a2a2a;
+            background: #111111;
+        }
+
+        .forum-breadcrumb {
+            font-size: 12px;
+            color: #555555;
+            margin-bottom: 8px;
+        }
+
+        .forum-title {
+            font-size: 20px;
+            font-weight: normal;
+            letter-spacing: 1px;
+        }
+
+        .forum-content {
+            padding: 24px;
+        }
+
+        /* 聊天区域 */
+        .pm-container {
+            background: #151515;
+            border: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        .pm-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pm-message {
+            max-width: 85%;
+        }
+
+        .pm-message.heeseung {
+            align-self: flex-start;
+        }
+
+        .pm-message.user {
+            align-self: flex-end;
+        }
+
+        .pm-name {
+            font-size: 10px;
+            color: #555555;
+            margin-bottom: 4px;
+        }
+
+        .pm-bubble {
+            background: #1a1a1a;
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid #3a3a3a;
+        }
+
+        .pm-message.heeseung .pm-bubble {
+            border-left-color: #5f8b6f;
+            border-left-width: 2px;
+        }
+
+        .pm-message.user .pm-bubble {
+            background: rgba(95, 139, 111, 0.1);
+        }
+
+        .pm-options {
+            padding: 16px;
+            border-top: 1px solid #2a2a2a;
+            background: #111111;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pm-option-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            font-size: 13px;
+            color: #c0c0c0;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .pm-option-btn:hover {
+            border-color: #5f8b6f;
+            background: rgba(95, 139, 111, 0.1);
+        }
+
+        .pm-option-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pm-status {
+            padding: 12px 16px;
+            font-size: 11px;
+            color: #555555;
+            border-top: 1px solid #2a2a2a;
+            text-align: center;
+        }
+
+        .pm-status .typing {
+            color: #5f8b6f;
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-window {
+            background: #0d0d0d;
+            border: 1px solid #5f8b6f;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 20px rgba(95, 139, 111, 0.2);
+        }
+
+        .modal-title {
+            font-size: 14px;
+            color: #5f8b6f;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+
+        .modal-message {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            color: #c0c0c0;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid #3a3a3a;
+            color: #c0c0c0;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .modal-btn:hover {
+            border-color: #5f8b6f;
+            color: #5f8b6f;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 移动端 */
+        @media (max-width: 768px) {
+            .forum-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .forum-sidebar.open {
+                transform: translateX(0);
+            }
+            .forum-main {
+                margin-left: 0;
+            }
+            .menu-toggle {
+                position: fixed;
+                top: 12px;
+                right: 16px;
+                width: 44px;
+                height: 44px;
+                background: #111111;
+                border: 1px solid #2a2a2a;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 200;
+                cursor: pointer;
+            }
+            .menu-toggle span {
+                display: block;
+                width: 20px;
+                height: 2px;
+                background: #c0c0c0;
+                position: relative;
+            }
+            .menu-toggle span::before,
+            .menu-toggle span::after {
+                content: '';
+                position: absolute;
+                width: 20px;
+                height: 2px;
+                background: #c0c0c0;
+                left: 0;
+                transition: all 0.3s;
+            }
+            .menu-toggle span::before { top: -6px; }
+            .menu-toggle span::after { bottom: -6px; }
+            .menu-toggle.open span { background: transparent; }
+            .menu-toggle.open span::before { transform: rotate(45deg); top: 0; }
+            .menu-toggle.open span::after { transform: rotate(-45deg); bottom: 0; }
+        }
+
+        @media (min-width: 769px) {
+            .menu-toggle { display: none; }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #555555;
+        }
+    </style>
 </head>
 <body>
 <div class="forum">
-    <!-- 汉堡菜单按钮（仅移动端显示） -->
     <div class="menu-toggle" id="menu-toggle">
         <span></span>
     </div>
 
-    <!-- 侧边栏导航 -->
     <div class="forum-sidebar" id="forum-sidebar">
         <div class="forum-logo">
             <h1>HEE</h1>
@@ -35,7 +403,7 @@
                 <span class="nav-icon">👤</span>
                 <span class="nav-label">关于他</span>
             </div>
-            <div class="nav-item" data-page="pm">
+            <div class="nav-item" data-page="pm" id="pm-nav">
                 <span class="nav-icon">💬</span>
                 <span class="nav-label">悄悄话</span>
             </div>
@@ -58,432 +426,424 @@
                 <span class="user-name">Heeseung</span>
             </div>
             <div class="user-last">最后活动: 很久以前</div>
+            <div class="user-last" id="residue-display" style="margin-top:4px;">残响: 0</div>
         </div>
     </div>
 
-    <!-- 主内容区 -->
     <div class="forum-main">
         <div class="forum-header">
             <div class="forum-breadcrumb">
-                <span id="breadcrumb">HEE / 帖子</span>
+                <span id="breadcrumb">HEE / 悄悄话</span>
             </div>
-            <div class="forum-title" id="page-title">帖子</div>
+            <div class="forum-title" id="page-title">悄悄话</div>
         </div>
         <div class="forum-content" id="forum-content">
-            <!-- 动态内容会加载到这里 -->
             <div class="loading">加载中...</div>
         </div>
     </div>
 </div>
 
-<!-- 扫描线效果（沉浸） -->
-<div class="scan-line"></div>
-<div class="noise-overlay"></div>
-
-<script src="js/state.js"></script>
-<script src="js/dialogue.js"></script>
-<script src="js/photos.js"></script>
-<script src="js/timer.js"></script>
-<script src="js/endings.js"></script>
-<script src="js/audio.js"></script>
 <script>
-    // 论坛主逻辑
-    (function() {
-        // 当前激活的页面
-        let currentPage = 'posts';
-        let currentDay = parseInt(localStorage.getItem('hee_day') || '1');
-        let residue = parseInt(localStorage.getItem('hee_residue') || '0');
-        
-        // 模拟数据（后续会移到data/*.json）
-        let posts = {
-            day1: [
-                { id: 1, title: '...', date: '2024-12-31 04:13', content: '不知道该写什么。但想留下点什么。', deleted: false }
+    // ========== 游戏状态 ==========
+    let currentDay = parseInt(localStorage.getItem('hee_day') || '1');
+    let residue = parseInt(localStorage.getItem('hee_residue') || '0');
+    let currentPage = 'pm';
+    let waitingForReply = false;
+    let currentOptions = [];
+    let conversationHistory = [];
+    let todayReplyCount = 0;
+    let hasShownFirstPopup = localStorage.getItem('hee_first_popup') === 'true';
+    
+    // 七天对话数据
+    const dayDialogues = {
+        1: {
+            firstMessage: "……你怎么进来的。",
+            options: [
+                { text: "误入的，不知道这是什么地方", reply: "误入……这个论坛不应该被找到的。", residueChange: 1 },
+                { text: "偶然点进来的", reply: "没有偶然。", residueChange: 0 },
+                { text: "沉默", reply: "……不回答也行。", residueChange: -1, needsDelay: true }
+            ],
+            followUps: [
+                { triggerResidue: 2, message: "你还在看。", options: [
+                    { text: "不可以吗", reply: "没有。只是没人待过这么久。", residueChange: 2 },
+                    { text: "你希望我走吗", reply: "……我可以说希望。但你也不会真的走吧。", residueChange: 1 }
+                ]}
             ]
-        };
+        },
+        2: {
+            firstMessage: "你又来了。第二天了。",
+            options: [
+                { text: "你在等我吗", reply: "……没有。只是记得时间。", residueChange: 1 },
+                { text: "这里只有你一个人吗", reply: "嗯。本来应该是这样的。", residueChange: 1 },
+                { text: "我再看一会儿", reply: "随你。", residueChange: 0 }
+            ]
+        },
+        3: {
+            firstMessage: "你看了那些帖子。",
+            options: [
+                { text: "你写了很多", reply: "写了又删。留下的不多。", residueChange: 1 },
+                { text: "为什么留着这个论坛", reply: "可能是忘了。也可能是…不想真的消失。", residueChange: 2 },
+                { text: "我会继续看的", reply: "……你为什么这么有耐心。", residueChange: 2 }
+            ]
+        },
+        4: {
+            firstMessage: "你翻过图廊了。那些照片…有些我自己都不记得了。",
+            options: [
+                { text: "照片会变", reply: "你发现了。我也不确定为什么。你来了之后才开始变的。", residueChange: 3 },
+                { text: "拍得不错", reply: "是吗。第一次有人这么说。", residueChange: 1 },
+                { text: "有点模糊", reply: "嗯。拍的时候手在抖。", residueChange: 0 }
+            ]
+        },
+        5: {
+            firstMessage: "你也在凌晨来过。",
+            options: [
+                { text: "你也睡不着吗", reply: "经常。凌晨比较安静。", residueChange: 2 },
+                { text: "在想什么", reply: "想很多。但说出来就没了。", residueChange: 1 },
+                { text: "我陪你", reply: "……不要说这种话。会变得不想让你走。", residueChange: 3 }
+            ]
+        },
+        6: {
+            firstMessage: "我数了一下。你来了六天了。",
+            options: [
+                { text: "你会记得我吗", reply: "会。你会忘了我吗。", residueChange: 2 },
+                { text: "你得到了什么", reply: "得到了一个…看到我的人。", residueChange: 2 },
+                { text: "你有什么想说的", reply: "谢谢。不是谢谢你来。是谢谢你没走。", residueChange: 3 }
+            ]
+        },
+        7: {
+            firstMessage: "第七天了。可能是最后一个晚上了。",
+            options: [
+                { text: "不要消失", reply: "……你希望我留下吗。", residueChange: 3, isEnding: true },
+                { text: "你会去哪里", reply: "不知道。也许就在硬盘里。", residueChange: 1, isEnding: true },
+                { text: "我会记得你", reply: "那就够了。", residueChange: 2, isEnding: true }
+            ]
+        }
+    };
+    
+    function updateUI() {
+        document.getElementById('residue-display').innerHTML = `残响: ${residue}`;
+        localStorage.setItem('hee_residue', residue);
+        localStorage.setItem('hee_day', currentDay);
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function addMessage(sender, text, isHeeseung = true) {
+        const messagesDiv = document.getElementById('pm-messages');
+        if (!messagesDiv) return;
         
-        let trash = [
-            { id: 't1', name: 'note_01.txt', date: '2024-03-15 02:47', content: '02:47\n想说一句话。写了。删了。这样比较干净。' },
-            { id: 't2', name: 'note_02.txt', date: '2024-06-22 03:22', content: '03:22\n有人看了回收站。我以为会彻底删掉。\n……\n算了。' }
-        ];
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `pm-message ${isHeeseung ? 'heeseung' : 'user'}`;
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        msgDiv.innerHTML = `
+            <div class="pm-name">${isHeeseung ? 'Heeseung' : '你'} · ${timeStr}</div>
+            <div class="pm-bubble">${escapeHtml(text)}</div>
+        `;
+        messagesDiv.appendChild(msgDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
-        let profile = {
-            name: 'Heeseung',
-            birth: '???',
-            likes: '???',
-            dislikes: '???',
-            bio: '一个快要被删干净的人。'
-        };
+        conversationHistory.push({ sender: isHeeseung ? 'hee' : 'user', text, time: Date.now() });
+    }
+    
+    function addUserMessage(text) {
+        addMessage(text, false);
+    }
+    
+    function clearOptions() {
+        const optionsDiv = document.getElementById('pm-options');
+        if (optionsDiv) optionsDiv.innerHTML = '';
+        currentOptions = [];
+    }
+    
+    function showOptions(options) {
+        const optionsDiv = document.getElementById('pm-options');
+        if (!optionsDiv) return;
+        optionsDiv.innerHTML = '';
+        currentOptions = options;
         
-        let favorites = {
-            songs: [{ name: '凌晨三点听比较好', note: '适合凌晨' }],
-            movies: [{ name: '结局不喜欢', note: '只看过片段' }],
-            photos: [{ name: '天气很好那天', note: '没人' }]
-        };
+        options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'pm-option-btn';
+            btn.textContent = opt.text;
+            btn.onclick = () => selectOption(opt, idx);
+            optionsDiv.appendChild(btn);
+        });
+    }
+    
+    function selectOption(option, idx) {
+        if (waitingForReply) return;
         
-        let logs = [
-            { date: '03-11', text: '下雨。没出门。' },
-            { date: '03-15', text: '冰美式。太冰了。' },
-            { date: '04-02', text: '累。' },
-            { date: '06-21', text: '白天很长。' },
-            { date: '08-14', text: '04:00' },
-            { date: '10-11', text: '' },
-            { date: '12-31', text: '一年结束了。' }
-        ];
+        addUserMessage(option.text);
+        waitingForReply = true;
+        clearOptions();
         
-        let gallery = [
-            { id: 1, src: '', caption: '天空', date: '2024-03-11', meta: '那天下了雨。之后停了。', variant: 0 },
-            { id: 2, src: '', caption: '练习室', date: '2024-04-02', meta: '拍糊了。不想重拍。', variant: 0 },
-            { id: 3, src: '', caption: '便利店', date: '2024-06-21', meta: '02:00 冰美式', variant: 0 },
-            { id: 4, src: '', caption: '侧影', date: '2024-08-14', meta: '不记得为什么拍这个', variant: 0 }
-        ];
+        const change = option.residueChange || 0;
+        residue = Math.max(-10, Math.min(30, residue + change));
+        updateUI();
         
-        // 渲染函数
-        function renderPage(page) {
-            const container = document.getElementById('forum-content');
-            const breadcrumb = document.getElementById('breadcrumb');
-            const pageTitle = document.getElementById('page-title');
+        const statusDiv = document.getElementById('pm-status');
+        if (statusDiv) statusDiv.innerHTML = '<span class="typing">Heeseung 正在输入...</span>';
+        
+        const delay = option.needsDelay ? 4000 : (Math.random() * 2000 + 1500);
+        setTimeout(() => {
+            addMessage(option.reply, true);
+            todayReplyCount++;
             
-            breadcrumb.innerHTML = `HEE / ${getPageName(page)}`;
-            pageTitle.innerHTML = getPageName(page);
+            if (statusDiv) statusDiv.innerHTML = '最后活动: 刚刚';
+            waitingForReply = false;
             
-            switch(page) {
-                case 'posts':
-                    renderPosts(container);
-                    break;
-                case 'gallery':
-                    renderGallery(container);
-                    break;
-                case 'profile':
-                    renderProfile(container);
-                    break;
-                case 'pm':
-                    renderPM(container);
-                    break;
-                case 'favorites':
-                    renderFavorites(container);
-                    break;
-                case 'logs':
-                    renderLogs(container);
-                    break;
-                case 'trash':
-                    renderTrash(container);
-                    break;
-                default:
-                    container.innerHTML = '<div class="loading">页面不存在</div>';
-            }
-        }
-        
-        function getPageName(page) {
-            const names = {
-                posts: '帖子',
-                gallery: '图廊',
-                profile: '关于他',
-                pm: '悄悄话',
-                favorites: '收藏',
-                logs: '日志',
-                trash: '回收站'
-            };
-            return names[page] || 'HEE';
-        }
-        
-        function renderPosts(container) {
-            let html = '<div class="post-list">';
-            // 根据天数显示不同内容
-            let availablePosts = [];
-            if (currentDay >= 1) {
-                availablePosts.push({ title: '...', date: '2024-12-31 04:13', content: '不知道该写什么。但想留下点什么。', id: 1 });
-            }
-            if (currentDay >= 3) {
-                availablePosts.push({ title: '今天', date: '2025-01-02 23:58', content: '今天发生了一件很好的事。想让你知道。', id: 2 });
-            }
-            if (currentDay >= 5) {
-                availablePosts.push({ title: '失眠', date: '2025-01-04 03:22', content: '又失眠了。在想一件事。……忘了。不重要。', id: 3 });
-            }
-            
-            if (availablePosts.length === 0) {
-                html += '<div class="post-item">暂无帖子</div>';
-            } else {
-                availablePosts.forEach(post => {
-                    html += `
-                        <div class="post-item" onclick="viewPost(${post.id})">
-                            <div class="post-title">${escapeHtml(post.title)}</div>
-                            <div class="post-meta">
-                                <span class="post-date">📅 ${post.date}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            html += '</div>';
-            container.innerHTML = html;
-        }
-        
-        function renderGallery(container) {
-            let html = '<div class="gallery-grid">';
-            gallery.forEach(photo => {
-                html += `
-                    <div class="gallery-item" onclick="viewPhoto(${photo.id})">
-                        <div class="gallery-image">
-                            <img src="assets/images/photos/photo_${photo.id}_base.jpg" alt="${photo.caption}" onerror="this.src='assets/images/ui/placeholder.jpg'">
-                        </div>
-                        <div class="gallery-caption">${escapeHtml(photo.caption)}<br>${photo.date}</div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
-        
-        function renderProfile(container) {
-            let birthDisplay = currentDay >= 3 ? profile.birth : '???';
-            let likesDisplay = currentDay >= 4 ? profile.likes : '???';
-            let dislikesDisplay = currentDay >= 4 ? profile.dislikes : '???';
-            
-            let html = `
-                <div class="profile-card">
-                    <div class="profile-field">
-                        <div class="profile-label">NAME</div>
-                        <div class="profile-value">${profile.name}</div>
-                    </div>
-                    <div class="profile-field">
-                        <div class="profile-label">BIRTH</div>
-                        <div class="profile-value ${currentDay < 3 ? 'hidden' : ''}">${birthDisplay}</div>
-                    </div>
-                    <div class="profile-field">
-                        <div class="profile-label">LIKES</div>
-                        <div class="profile-value ${currentDay < 4 ? 'hidden' : ''}">${likesDisplay}</div>
-                    </div>
-                    <div class="profile-field">
-                        <div class="profile-label">DISLIKES</div>
-                        <div class="profile-value ${currentDay < 4 ? 'hidden' : ''}">${dislikesDisplay}</div>
-                    </div>
-                    <div class="profile-field">
-                        <div class="profile-label">BIO</div>
-                        <div class="profile-value">${profile.bio}</div>
-                    </div>
-                </div>
-            `;
-            container.innerHTML = html;
-        }
-        
-        function renderPM(container) {
-            let html = `
-                <div class="pm-container">
-                    <div class="pm-messages" id="pm-messages">
-                        <div class="pm-message heeseung">
-                            <div class="pm-name">Heeseung · 很久以前</div>
-                            <div class="pm-bubble">……你怎么进来的。</div>
-                        </div>
-                    </div>
-                    <div class="pm-input-area">
-                        <input type="text" class="pm-input" id="pm-input" placeholder="写点什么..." autocomplete="off">
-                        <button class="pm-send" id="pm-send">发送</button>
-                    </div>
-                </div>
-            `;
-            container.innerHTML = html;
-            
-            // 绑定发送事件
-            const sendBtn = document.getElementById('pm-send');
-            const input = document.getElementById('pm-input');
-            const messagesDiv = document.getElementById('pm-messages');
-            
-            function sendMessage() {
-                const text = input.value.trim();
-                if (!text) return;
-                
-                // 添加用户消息
-                const userMsg = document.createElement('div');
-                userMsg.className = 'pm-message user';
-                userMsg.innerHTML = `<div class="pm-name">你 · 刚刚</div><div class="pm-bubble">${escapeHtml(text)}</div>`;
-                messagesDiv.appendChild(userMsg);
-                input.value = '';
-                
-                // 滚动到底部
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                
-                // 模拟羲承回复（根据残响值和天数）
-                setTimeout(() => {
-                    let reply = getHeeseungReply(text, currentDay, residue);
-                    const heeMsg = document.createElement('div');
-                    heeMsg.className = 'pm-message heeseung';
-                    heeMsg.innerHTML = `<div class="pm-name">Heeseung · 刚刚</div><div class="pm-bubble">${reply}</div>`;
-                    messagesDiv.appendChild(heeMsg);
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                    
-                    // 更新残响值
-                    updateResidue(text);
-                }, 800);
-            }
-            
-            sendBtn.addEventListener('click', sendMessage);
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendMessage();
-            });
-        }
-        
-        function getHeeseungReply(msg, day, res) {
-            // 简易回复逻辑（后续会丰富）
-            const replies = [
-                '……',
-                '你还在这里。',
-                '我不知道该说什么。',
-                '你看了那些帖子。',
-                '……算了。',
-                '你很像一个人。',
-                '我本来想删掉这些的。'
-            ];
-            
-            if (msg.includes('谁') || msg.includes('你')) {
-                return '一个快要被删干净的人。';
-            }
-            if (msg.includes('为什么') || msg.includes('怎么')) {
-                return '我也不知道。可能是不想彻底消失。';
-            }
-            if (msg.includes('你好') || msg.includes('嗨')) {
-                return '……你好。很久没人这么说了。';
-            }
-            if (day >= 5 && (msg.includes('失眠') || msg.includes('凌晨'))) {
-                return '你也在这个时间醒着吗。';
-            }
-            
-            return replies[Math.floor(Math.random() * replies.length)];
-        }
-        
-        function updateResidue(msg) {
-            let add = 0;
-            if (msg.length > 5) add = 1;
-            if (msg.includes('谢谢') || msg.includes('懂')) add = 2;
-            if (msg.includes('删') || msg.includes('走')) add = -1;
-            
-            let newResidue = Math.max(-10, Math.min(30, residue + add));
-            localStorage.setItem('hee_residue', newResidue);
-            residue = newResidue;
-            
-            // 检查是否增加天数
-            checkDayProgression();
-        }
-        
-        function checkDayProgression() {
-            // 简单逻辑：每天第一次进入增加天数（实际需要更复杂）
-            let lastDate = localStorage.getItem('hee_last_date');
-            let today = new Date().toDateString();
-            if (lastDate !== today) {
-                let newDay = Math.min(7, currentDay + 1);
-                localStorage.setItem('hee_day', newDay);
-                localStorage.setItem('hee_last_date', today);
-                currentDay = newDay;
-            }
-        }
-        
-        function renderFavorites(container) {
-            let html = '';
-            for (let cat in favorites) {
-                let catName = cat === 'songs' ? '🎵 音乐' : (cat === 'movies' ? '🎬 电影' : '📷 照片');
-                html += `<div class="favorites-category">
-                    <div class="favorites-title">${catName}</div>
-                    <div class="favorites-list">`;
-                favorites[cat].forEach(item => {
-                    html += `<div class="favorite-item">
-                        <div class="favorite-name">${escapeHtml(item.name)}</div>
-                        <div class="favorite-note">${escapeHtml(item.note)}</div>
-                    </div>`;
-                });
-                html += `</div></div>`;
-            }
-            container.innerHTML = html;
-        }
-        
-        function renderLogs(container) {
-            let html = '<div class="log-timeline">';
-            logs.forEach(log => {
-                let textDisplay = log.text === '' ? '<span class="blank">——</span>' : escapeHtml(log.text);
-                html += `
-                    <div class="log-entry">
-                        <div class="log-date">${log.date}</div>
-                        <div class="log-text">${textDisplay}</div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
-        
-        function renderTrash(container) {
-            let html = '<div class="trash-list">';
-            trash.forEach(item => {
-                html += `
-                    <div class="trash-item" onclick="viewTrashItem('${item.id}')">
-                        <div class="trash-title">${escapeHtml(item.name)}</div>
-                        <div class="post-meta">🗑️ ${item.date}</div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
-        
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-        
-        // 全局函数供onclick调用
-        window.viewPost = function(id) {
-            alert('帖子详情功能开发中。第 ' + currentDay + ' 天');
-        };
-        
-        window.viewPhoto = function(id) {
-            alert('查看照片: ' + gallery[id-1]?.caption);
-            // 触发照片变化逻辑
-            if (typeof incrementPhotoVariant === 'function') {
-                incrementPhotoVariant(id);
-            }
-        };
-        
-        window.viewTrashItem = function(id) {
-            let item = trash.find(t => t.id === id);
-            if (item) {
-                alert(item.content);
-            }
-        };
-        
-        // 导航切换
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const page = this.dataset.page;
-                if (page) {
-                    currentPage = page;
-                    renderPage(currentPage);
-                    // 更新激活样式
-                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                    this.classList.add('active');
+            const dayData = dayDialogues[currentDay];
+            if (dayData && dayData.followUps) {
+                for (let follow of dayData.followUps) {
+                    if (residue >= follow.triggerResidue) {
+                        setTimeout(() => {
+                            triggerNewMessage(follow.message, follow.options);
+                        }, 3000);
+                        break;
+                    }
                 }
+            }
+            
+            if (todayReplyCount >= 3 && currentDay < 7) {
+                setTimeout(() => {
+                    advanceToNextDay();
+                }, 5000);
+            }
+            
+            if (option.isEnding && currentDay === 7) {
+                checkEnding();
+            }
+        }, delay);
+    }
+    
+    function triggerNewMessage(message, options) {
+        if (waitingForReply) return;
+        waitingForReply = true;
+        
+        const statusDiv = document.getElementById('pm-status');
+        if (statusDiv) statusDiv.innerHTML = '<span class="typing">Heeseung 正在输入...</span>';
+        
+        setTimeout(() => {
+            addMessage(message, true);
+            waitingForReply = false;
+            if (statusDiv) statusDiv.innerHTML = '最后活动: 刚刚';
+            showOptions(options);
+        }, 2000);
+    }
+    
+    function advanceToNextDay() {
+        if (currentDay >= 7) return;
+        currentDay++;
+        localStorage.setItem('hee_day', currentDay);
+        todayReplyCount = 0;
+        updateUI();
+        
+        setTimeout(() => {
+            const dayData = dayDialogues[currentDay];
+            if (dayData) {
+                triggerNewMessage(dayData.firstMessage, dayData.options);
+            }
+        }, 3000);
+    }
+    
+    function checkEnding() {
+        let ending = '';
+        if (residue >= 21) {
+            ending = '❤️ 真结局 · 痕迹';
+            addMessage('我本来想删掉一切的。但你来了。……所以我不删了。', true);
+        } else if (residue >= 13) {
+            ending = '💬 好结局 · 我在';
+            addMessage('我没有离开。只是不知道该怎么面对一个……真的看见我的人。', true);
+        } else if (residue >= 5) {
+            ending = '😐 普通结局 · 余温';
+            addMessage('他还在这里。只是不再说话了。', true);
+        } else if (residue >= 0) {
+            ending = '❌ 假结局 · 回音';
+            addMessage('他好像不在这里了。', true);
+        } else {
+            ending = '💀 假结局 · 格式化';
+            addMessage('这次真的删掉了。', true);
+        }
+        
+        localStorage.setItem('hee_ending', ending);
+        
+        clearOptions();
+        const statusDiv = document.getElementById('pm-status');
+        if (statusDiv) statusDiv.innerHTML = `结局: ${ending}`;
+    }
+    
+    // 弹窗函数
+    function showHeeseungPopup() {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal-window">
+                <div class="modal-title">[ 悄悄话 ]</div>
+                <div class="modal-message">……你怎么进来的。</div>
+                <div class="modal-buttons">
+                    <button class="modal-btn" data-reply="0">误入的</button>
+                    <button class="modal-btn" data-reply="1">偶然</button>
+                    <button class="modal-btn" data-reply="2">沉默</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        const btns = overlay.querySelectorAll('.modal-btn');
+        btns.forEach((btn, idx) => {
+            btn.addEventListener('click', () => {
+                overlay.remove();
+                handleFirstReply(idx);
             });
         });
+    }
+    
+    function handleFirstReply(replyIndex) {
+        const dayData = dayDialogues[1];
+        let selectedOption;
         
-        // 移动端菜单
-        const menuToggle = document.getElementById('menu-toggle');
-        const sidebar = document.getElementById('forum-sidebar');
-        if (menuToggle) {
-            menuToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('open');
-                this.classList.toggle('open');
-            });
+        if (replyIndex === 0) {
+            selectedOption = dayData.options[0];
+        } else if (replyIndex === 1) {
+            selectedOption = dayData.options[1];
+        } else {
+            selectedOption = dayData.options[2];
         }
         
-        // 初始化
-        renderPage('posts');
-        document.querySelector('.nav-item[data-page="posts"]').classList.add('active');
+        // 初始化聊天界面
+        renderPM();
         
-        // 每天第一次进入时检查
-        checkDayProgression();
-    })();
+        // 添加用户回复
+        addUserMessage(selectedOption.text);
+        
+        // 羲承回复
+        setTimeout(() => {
+            addMessage(selectedOption.reply, true);
+            residue += selectedOption.residueChange;
+            residue = Math.max(-10, Math.min(30, residue));
+            updateUI();
+            todayReplyCount++;
+            
+            // 检查后续对话
+            if (residue >= 2) {
+                setTimeout(() => {
+                    triggerNewMessage('你还在看。', [
+                        { text: "不可以吗", reply: "没有。只是没人待过这么久。", residueChange: 2 },
+                        { text: "你希望我走吗", reply: "……我可以说希望。但你也不会真的走吧。", residueChange: 1 }
+                    ]);
+                }, 3000);
+            }
+        }, 1500);
+    }
+    
+    function renderPM() {
+        const container = document.getElementById('forum-content');
+        container.innerHTML = `
+            <div class="pm-container">
+                <div class="pm-messages" id="pm-messages">
+                    ${conversationHistory.length === 0 ? '<div style="text-align:center; color:#555555; padding:40px;">等待消息...</div>' : ''}
+                </div>
+                <div id="pm-options" class="pm-options"></div>
+                <div id="pm-status" class="pm-status">最后活动: 很久以前</div>
+            </div>
+        `;
+        
+        if (conversationHistory.length > 0) {
+            const messagesDiv = document.getElementById('pm-messages');
+            messagesDiv.innerHTML = '';
+            conversationHistory.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `pm-message ${msg.sender === 'hee' ? 'heeseung' : 'user'}`;
+                const date = new Date(msg.time);
+                const timeStr = `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+                msgDiv.innerHTML = `
+                    <div class="pm-name">${msg.sender === 'hee' ? 'Heeseung' : '你'} · ${timeStr}</div>
+                    <div class="pm-bubble">${escapeHtml(msg.text)}</div>
+                `;
+                messagesDiv.appendChild(msgDiv);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    }
+    
+    function renderPosts() { document.getElementById('forum-content').innerHTML = '<div class="loading">帖子功能开发中...</div>'; }
+    function renderGallery() { document.getElementById('forum-content').innerHTML = '<div class="loading">图廊功能开发中...</div>'; }
+    function renderProfile() { document.getElementById('forum-content').innerHTML = '<div class="loading">关于他功能开发中...</div>'; }
+    function renderFavorites() { document.getElementById('forum-content').innerHTML = '<div class="loading">收藏功能开发中...</div>'; }
+    function renderLogs() { document.getElementById('forum-content').innerHTML = '<div class="loading">日志功能开发中...</div>'; }
+    function renderTrash() { document.getElementById('forum-content').innerHTML = '<div class="loading">回收站功能开发中...</div>'; }
+    
+    function renderPage(page) {
+        const breadcrumb = document.getElementById('breadcrumb');
+        const pageTitle = document.getElementById('page-title');
+        const pageNames = { posts:'帖子', gallery:'图廊', profile:'关于他', pm:'悄悄话', favorites:'收藏', logs:'日志', trash:'回收站' };
+        breadcrumb.innerHTML = `HEE / ${pageNames[page] || 'HEE'}`;
+        pageTitle.innerHTML = pageNames[page] || 'HEE';
+        
+        switch(page) {
+            case 'pm': renderPM(); break;
+            case 'posts': renderPosts(); break;
+            case 'gallery': renderGallery(); break;
+            case 'profile': renderProfile(); break;
+            case 'favorites': renderFavorites(); break;
+            case 'logs': renderLogs(); break;
+            case 'trash': renderTrash(); break;
+            default: renderPM();
+        }
+    }
+    
+    // 导航事件
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.dataset.page;
+            if (page) {
+                currentPage = page;
+                renderPage(currentPage);
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                this.classList.add('active');
+            }
+        });
+    });
+    
+    // 移动端菜单
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('forum-sidebar');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            menuToggle.classList.toggle('open');
+        });
+    }
+    
+    // 初始化
+    updateUI();
+    renderPage('pm');
+    document.querySelector('.nav-item[data-page="pm"]').classList.add('active');
+    
+    // 10秒后弹窗（仅第一次）
+    if (!hasShownFirstPopup) {
+        setTimeout(() => {
+            showHeeseungPopup();
+            localStorage.setItem('hee_first_popup', 'true');
+        }, 10000);
+    } else if (conversationHistory.length === 0) {
+        // 如果不是第一次但历史为空，恢复对话
+        setTimeout(() => {
+            const dayData = dayDialogues[currentDay];
+            if (dayData && document.getElementById('pm-options') && document.getElementById('pm-options').innerHTML === '') {
+                triggerNewMessage(dayData.firstMessage, dayData.options);
+            }
+        }, 3000);
+    }
 </script>
 </body>
 </html>
